@@ -61,21 +61,21 @@ namespace StatTrackerPlugin
         public void DamageTakenCount(PlayerDamageEvent args) //damage taken
         {
 
-            var plr = args.Target;
-            var target = args.Player;
+            var plr = args.Player;
+            var target = args.Target;
             if (target == null || plr == null || !(Round.IsRoundStarted)) return;
 
             if (!(args.DamageHandler is AttackerDamageHandler attackerDamageHandler) ||
-                attackerDamageHandler.IsFriendlyFire || plr.Role != RoleTypeId.ClassD) return;
+                attackerDamageHandler.IsFriendlyFire || target.Role != RoleTypeId.ClassD) return;
 
-            if (StatTracking.ContainsKey(plr.UserId))
-                StatTracking[plr.UserId].DamageTaken += (int)attackerDamageHandler.Damage;
+            if (StatTracking.ContainsKey(target.UserId))
+                StatTracking[target.UserId].DamageTaken += (int)attackerDamageHandler.Damage;
 
             else
             {
-                var Stats = new TrackedStats(plr);
+                var Stats = new TrackedStats(target);
                 Stats.DamageTaken = (int)attackerDamageHandler.Damage;
-                StatTracking.Add(plr.UserId, Stats);
+                StatTracking.Add(target.UserId, Stats);
             }
         }
 
@@ -139,26 +139,30 @@ namespace StatTrackerPlugin
             }
         }
 
-        [PluginEvent(ServerEventType.PlayerDeath)]
-        public void SCPsKilledCount(PlayerDeathEvent args)// SCPs killed
+        [PluginEvent(ServerEventType.PlayerDying)]
+        public void SCPsKilledCount(PlayerDyingEvent args)// SCPs killed
         {
             var plr = args.Player;
             var Killer = args.Attacker;
             if (plr == null || Killer == null || !Round.IsRoundStarted) return;
-            if (!plr.IsSCP) return;
+            if (!plr.IsSCP) return; //WHY THE FUCK DO YOU WORK
             if (StatTracking.ContainsKey(Killer.UserId))
+            {
                 StatTracking[Killer.UserId].SCPsKilled += 1;
-
+                
+            }
             else
             {
                 var Stats = new TrackedStats(Killer);
                 Stats.SCPsKilled = 1;
                 StatTracking.Add(Killer.UserId, Stats);
+                
             }
+            
         }
 
-        [PluginEvent(ServerEventType.PlayerDeath)]
-        public void HumansKilledCount(PlayerDeathEvent args)//humans killed
+        [PluginEvent(ServerEventType.PlayerDying)]
+        public void HumansKilledCount(PlayerDyingEvent args)//humans killed
         {
             var plr = args.Player;
             var Killer = args.Attacker;
@@ -380,7 +384,7 @@ namespace StatTrackerPlugin
 
 			Log.Info($"{stats.Count} stats tracked");
 
-            var jsonstring = JsonConvert.SerializeObject(stats.ToArray());
+            var jsonstring = JsonConvert.SerializeObject(stats.ToArray(), Formatting.Indented);
             Post("https://testapi.dragonscp.co.uk/scpsl/stattracker", new StringContent(jsonstring, Encoding.UTF8, "application/json"));
         }
         public async static Task<HttpResponseMessage> Post(string Url, StringContent Content)
