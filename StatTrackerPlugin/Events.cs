@@ -398,9 +398,7 @@ namespace StatTrackerPlugin
             public int HumansKilled = 0;
             public int HumanKills = 0;
             public int MedicalItems = 0;
-
             public bool Escaped = false;
-
             public bool RoundWon = false;
             public int SecondsPlayed = 0;
             public int PlayersDisarmed = 0;
