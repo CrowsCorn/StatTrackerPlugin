@@ -45,7 +45,7 @@ namespace StatTrackerPlugin
             if (target == null || plr == null || !(Round.IsRoundStarted)) return;
 
             if (!(args.DamageHandler is AttackerDamageHandler attackerDamageHandler) ||
-                attackerDamageHandler.IsFriendlyFire || plr.Role != RoleTypeId.ClassD) return;
+                (attackerDamageHandler.IsFriendlyFire && plr.Role != RoleTypeId.ClassD)) return;
 
             if (StatTracking.ContainsKey(plr.UserId))
                 StatTracking[plr.UserId].DamageDealt += (int)attackerDamageHandler.Damage;
@@ -66,7 +66,7 @@ namespace StatTrackerPlugin
             if (target == null || plr == null || !(Round.IsRoundStarted)) return;
 
             if (!(args.DamageHandler is AttackerDamageHandler attackerDamageHandler) ||
-                attackerDamageHandler.IsFriendlyFire || target.Role != RoleTypeId.ClassD) return;
+                (attackerDamageHandler.IsFriendlyFire && target.Role != RoleTypeId.ClassD)) return;
 
             if (StatTracking.ContainsKey(target.UserId))
                 StatTracking[target.UserId].DamageTaken += (int)attackerDamageHandler.Damage;
