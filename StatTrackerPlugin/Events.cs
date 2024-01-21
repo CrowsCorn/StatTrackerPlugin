@@ -235,60 +235,7 @@ namespace StatTrackerPlugin
                     StatTracking.Add(plr.UserId, Stats);
                 }
             }
-        }
-
-        
-        [PluginEvent(ServerEventType.RoundEnd)]
-        public void RoundsWon(RoundEndEvent args)
-        {
-            foreach (Player plr in Player.GetPlayers())
-            {
-                if (plr == null || !(Round.IsRoundStarted)) return;
-                if (plr.Team == Team.SCPs && args.LeadingTeam == RoundSummary.LeadingTeam.Anomalies)
-                {
-                    if (StatTracking.ContainsKey(plr.UserId))
-                        StatTracking[plr.UserId].RoundWon = true;
-
-                    else
-                    {
-                        var Stats = new TrackedStats(plr);
-                        Stats.RoundWon = true;
-                        StatTracking.Add(plr.UserId, Stats);
-                    }
-                }
-
-                if (plr.Team == Team.FoundationForces && args.LeadingTeam == RoundSummary.LeadingTeam.FacilityForces)
-                {
-                    if (StatTracking.ContainsKey(plr.UserId))
-                        StatTracking[plr.UserId].RoundWon = true;
-
-                    else
-                    {
-                        var Stats = new TrackedStats(plr);
-                        Stats.RoundWon = true;
-                        StatTracking.Add(plr.UserId, Stats);
-                    }
-                }
-
-                if (plr.Team == Team.ChaosInsurgency && args.LeadingTeam == RoundSummary.LeadingTeam.ChaosInsurgency)
-                {
-                    if (StatTracking.ContainsKey(plr.UserId))
-                        StatTracking[plr.UserId].RoundWon = true;
-
-                    else
-                    {
-                        var Stats = new TrackedStats(plr);
-                        Stats.RoundWon = true;
-                        StatTracking.Add(plr.UserId, Stats);
-                    }
-                }
-                if (args.LeadingTeam == RoundSummary.LeadingTeam.Draw) return;
-
-
-            }
-        }
-
-        
+        } 
 
         [PluginEvent(ServerEventType.PlayerJoined)]
         public void Playtime(PlayerJoinedEvent args)
@@ -367,9 +314,18 @@ namespace StatTrackerPlugin
                 {
                     int secondsplayed = (int)(DateTime.Now - StatTracking[plr.UserId].Jointime).TotalSeconds;
                     StatTracking[plr.UserId].SecondsPlayed += secondsplayed;
+
+
+                    if (plr.Team == Team.SCPs && args.LeadingTeam == RoundSummary.LeadingTeam.Anomalies)
+                        StatTracking[plr.UserId].RoundWon = true;
+
+                    if (plr.Team == Team.FoundationForces && args.LeadingTeam == RoundSummary.LeadingTeam.FacilityForces)
+                        StatTracking[plr.UserId].RoundWon = true;
+
+                    if (plr.Team == Team.ChaosInsurgency && args.LeadingTeam == RoundSummary.LeadingTeam.ChaosInsurgency)
+                        StatTracking[plr.UserId].RoundWon = true;
                 }
             }
-
 			List<TrackedStats> stats = new List<TrackedStats>();
 
 			foreach(var a in StatTracking)
