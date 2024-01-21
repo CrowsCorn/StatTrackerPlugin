@@ -128,14 +128,14 @@ namespace StatTrackerPlugin
 
             if (plr == null || Killer == null || !Round.IsRoundStarted) return;
             if (!Killer.IsSCP) return;
-            if (StatTracking.ContainsKey(plr.UserId))
-                StatTracking[plr.UserId].Deaths += 1;
+            if (StatTracking.ContainsKey(Killer.UserId))
+                StatTracking[Killer.UserId].Deaths += 1;
 
             else
             {
-                var Stats = new TrackedStats(plr);
+                var Stats = new TrackedStats(Killer);
                 Stats.Deaths = 1;
-                StatTracking.Add(plr.UserId, Stats);
+                StatTracking.Add(Killer.UserId, Stats);
             }
         }
 
@@ -146,14 +146,14 @@ namespace StatTrackerPlugin
             var Killer = args.Attacker;
             if (plr == null || Killer == null || !Round.IsRoundStarted) return;
             if (!plr.IsSCP) return;
-            if (StatTracking.ContainsKey(plr.UserId))
-                StatTracking[plr.UserId].SCPsKilled += 1;
+            if (StatTracking.ContainsKey(Killer.UserId))
+                StatTracking[Killer.UserId].SCPsKilled += 1;
 
             else
             {
-                var Stats = new TrackedStats(plr);
+                var Stats = new TrackedStats(Killer);
                 Stats.SCPsKilled = 1;
-                StatTracking.Add(plr.UserId, Stats);
+                StatTracking.Add(Killer.UserId, Stats);
             }
         }
 
@@ -164,14 +164,14 @@ namespace StatTrackerPlugin
             var Killer = args.Attacker;
             if (plr == null || Killer == null || !Round.IsRoundStarted) return;
             if (!plr.IsHuman) return;
-            if (StatTracking.ContainsKey(plr.UserId))
-                StatTracking[plr.UserId].HumansKilled += 1;
+            if (StatTracking.ContainsKey(Killer.UserId))
+                StatTracking[Killer.UserId].HumansKilled += 1;
 
             else
             {
                 var Stats = new TrackedStats(plr);
                 Stats.HumansKilled = 1;
-                StatTracking.Add(plr.UserId, Stats);
+                StatTracking.Add(Killer.UserId, Stats);
             }
         }
 
@@ -183,14 +183,14 @@ namespace StatTrackerPlugin
             var Killer = args.Attacker;
             if (plr == null || Killer == null || !Round.IsRoundStarted) return;
             if (!Killer.IsHuman) return;
-            if (StatTracking.ContainsKey(plr.UserId))
-                StatTracking[plr.UserId].HumanKills += 1;
+            if (StatTracking.ContainsKey(Killer.UserId))
+                StatTracking[Killer.UserId].HumanKills += 1;
 
             else
             {
-                var Stats = new TrackedStats(plr);
+                var Stats = new TrackedStats(Killer);
                 Stats.HumanKills = 1;
-                StatTracking.Add(plr.UserId, Stats);
+                StatTracking.Add(Killer.UserId, Stats);
             }
         }
 
