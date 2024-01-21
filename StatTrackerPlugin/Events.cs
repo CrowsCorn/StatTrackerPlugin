@@ -129,12 +129,12 @@ namespace StatTrackerPlugin
             if (plr == null || Killer == null || !Round.IsRoundStarted) return;
             if (!Killer.IsSCP) return;
             if (StatTracking.ContainsKey(Killer.UserId))
-                StatTracking[Killer.UserId].Deaths += 1;
+                StatTracking[Killer.UserId].SCPKills += 1;
 
             else
             {
                 var Stats = new TrackedStats(Killer);
-                Stats.Deaths = 1;
+                Stats.SCPKills = 1;
                 StatTracking.Add(Killer.UserId, Stats);
             }
         }
@@ -315,12 +315,12 @@ namespace StatTrackerPlugin
             if(plr.IsSCP)
             {
                 if (StatTracking.ContainsKey(plr.UserId))
-                    StatTracking[plr.UserId].SCP += 1;
+                    StatTracking[plr.UserId].SCP = (int)plr.Role;
 
                 else
                 {
                     var Stats = new TrackedStats(plr);
-                    Stats.SCP = 1;
+                    Stats.SCP = (int)plr.Role;
                     StatTracking.Add(plr.UserId, Stats);
                 }
             }
