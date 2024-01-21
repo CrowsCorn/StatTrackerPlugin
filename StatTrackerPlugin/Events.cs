@@ -180,13 +180,13 @@ namespace StatTrackerPlugin
                     switch (args.LeadingTeam)
                     {
                         case RoundSummary.LeadingTeam.Anomalies:
-                            StatTracking[plr.UserId].RoundWon = plr.Team == Team.SCPs;
+                            StatTracking[plr.UserId].RoundWon = plr.Team.GetFaction() == Faction.SCP;
                             break;
                         case RoundSummary.LeadingTeam.FacilityForces:
-                            StatTracking[plr.UserId].RoundWon = plr.Team == Team.FoundationForces;
+                            StatTracking[plr.UserId].RoundWon = plr.Team.GetFaction() == Faction.FoundationStaff;
                             break;
                         case RoundSummary.LeadingTeam.ChaosInsurgency:
-                            StatTracking[plr.UserId].RoundWon = plr.Team == Team.ChaosInsurgency;
+                            StatTracking[plr.UserId].RoundWon = plr.Team.GetFaction() == Faction.FoundationEnemy;
                             break;
                     }
                 }
