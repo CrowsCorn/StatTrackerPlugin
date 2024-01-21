@@ -26,6 +26,7 @@ using System.Runtime.Remoting.Messaging;
 using InventorySystem.Items;
 using Newtonsoft.Json;
 using System.Net.Http;
+using static UnityEngine.GraphicsBuffer;
 
 namespace StatTrackerPlugin
 {
@@ -41,9 +42,7 @@ namespace StatTrackerPlugin
 
             var plr = args.Player;
             var target = args.Target;
-            if (!plr.DoNotTrack) return;
-
-            if (target == null && !(Round.IsRoundStarted)) return;
+            if (target == null || plr == null || !(Round.IsRoundStarted)) return;
 
             if (!(args.DamageHandler is AttackerDamageHandler attackerDamageHandler) ||
                 attackerDamageHandler.IsFriendlyFire || plr.Role != RoleTypeId.ClassD) return;
@@ -58,14 +57,13 @@ namespace StatTrackerPlugin
                 StatTracking.Add(plr.UserId, Stats);
             }
         }
+        [PluginEvent(ServerEventType.PlayerDamage)]
         public void DamageTakenCount(PlayerDamageEvent args) //damage taken
         {
 
             var plr = args.Target;
             var target = args.Player;
-            if (!plr.DoNotTrack) return;
-
-            if (target == null && !(Round.IsRoundStarted)) return;
+            if (target == null || plr == null || !(Round.IsRoundStarted)) return;
 
             if (!(args.DamageHandler is AttackerDamageHandler attackerDamageHandler) ||
                 attackerDamageHandler.IsFriendlyFire || plr.Role != RoleTypeId.ClassD) return;
@@ -86,9 +84,7 @@ namespace StatTrackerPlugin
         {
             var plr = args.Player;
 
-            if (plr == null && !(Round.IsRoundStarted)) return;
-
-            if (!plr.DoNotTrack) return;
+            if (plr == null || !(Round.IsRoundStarted)) return;
 
             if (plr.Role == RoleTypeId.Tutorial) return;
 
@@ -110,7 +106,7 @@ namespace StatTrackerPlugin
         {
             var plr = args.Player;
 
-            if (plr == null && !(Round.IsRoundStarted)) return;
+            if (plr == null || !(Round.IsRoundStarted)) return;
 
             if (StatTracking.ContainsKey(plr.UserId))
                 StatTracking[plr.UserId].Escaped = true;
@@ -130,7 +126,7 @@ namespace StatTrackerPlugin
             var plr = args.Player;
             var Killer = args.Attacker;
 
-            if (plr == null && !Round.IsRoundStarted || Killer == null && !Round.IsRoundStarted) return;
+            if (plr == null || Killer == null || !Round.IsRoundStarted) return;
             if (!Killer.IsSCP) return;
             if (StatTracking.ContainsKey(plr.UserId))
                 StatTracking[plr.UserId].Deaths += 1;
@@ -148,7 +144,7 @@ namespace StatTrackerPlugin
         {
             var plr = args.Player;
             var Killer = args.Attacker;
-            if (plr == null && !Round.IsRoundStarted || Killer == null && !Round.IsRoundStarted) return;
+            if (plr == null || Killer == null || !Round.IsRoundStarted) return;
             if (!plr.IsSCP) return;
             if (StatTracking.ContainsKey(plr.UserId))
                 StatTracking[plr.UserId].SCPsKilled += 1;
@@ -166,7 +162,7 @@ namespace StatTrackerPlugin
         {
             var plr = args.Player;
             var Killer = args.Attacker;
-            if (plr == null && !Round.IsRoundStarted || Killer == null && !Round.IsRoundStarted) return;
+            if (plr == null || Killer == null || !Round.IsRoundStarted) return;
             if (!plr.IsHuman) return;
             if (StatTracking.ContainsKey(plr.UserId))
                 StatTracking[plr.UserId].HumansKilled += 1;
@@ -185,7 +181,7 @@ namespace StatTrackerPlugin
         {
             var plr = args.Player;
             var Killer = args.Attacker;
-            if (plr == null && !Round.IsRoundStarted || Killer == null && !Round.IsRoundStarted) return;
+            if (plr == null || Killer == null || !Round.IsRoundStarted) return;
             if (!Killer.IsHuman) return;
             if (StatTracking.ContainsKey(plr.UserId))
                 StatTracking[plr.UserId].HumanKills += 1;
@@ -205,7 +201,7 @@ namespace StatTrackerPlugin
             var plr = args.Player;
             var Target = args.Target;
 
-            if (plr == null && !Round.IsRoundStarted) return;
+            if (plr == null || !(Round.IsRoundStarted)) return;
             if (StatTracking.ContainsKey(plr.UserId))
                 StatTracking[plr.UserId].PlayersDisarmed += 1;
 
@@ -222,7 +218,7 @@ namespace StatTrackerPlugin
         {
             var plr = args.Player;
 
-            if (plr != null && !Round.IsRoundStarted) return;
+            if (plr == null || !(Round.IsRoundStarted)) return;
             if (plr.CurrentItem.ItemTypeId == ItemType.Medkit)
             {
                 if (StatTracking.ContainsKey(plr.UserId))
@@ -243,7 +239,7 @@ namespace StatTrackerPlugin
         {
             foreach (Player plr in Player.GetPlayers())
             {
-                if (plr != null && !Round.IsRoundStarted) return;
+                if (plr == null || !(Round.IsRoundStarted)) return;
                 if (plr.Team == Team.SCPs && args.LeadingTeam == RoundSummary.LeadingTeam.Anomalies)
                 {
                     if (StatTracking.ContainsKey(plr.UserId))
