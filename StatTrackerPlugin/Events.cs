@@ -365,7 +365,22 @@ namespace StatTrackerPlugin
                     StatTracking[plr.UserId].SecondsPlayed += secondsplayed;
                 }
             }
-            var jsonstring = JsonConvert.SerializeObject(StatTracking.Values.Where(r => (!r.DNT)).ToArray());
+
+			List<TrackedStats> stats = new List<TrackedStats>();
+
+			foreach(var a in StatTracking)
+			{
+				Log.Info($"Adding {a.Key} | {a.Value.UserID} | {a.Value.DNT}");
+
+				if (!a.Value.DNT)
+				{
+					stats.Add(a.Value);
+				}
+			}
+
+			Log.Info($"{stats.Count} stats tracked");
+
+            var jsonstring = JsonConvert.SerializeObject(stats.ToArray());
             Post("https://testapi.dragonscp.co.uk/scpsl/stattracker", new StringContent(jsonstring, Encoding.UTF8, "application/json"));
         }
         public async static Task<HttpResponseMessage> Post(string Url, StringContent Content)
