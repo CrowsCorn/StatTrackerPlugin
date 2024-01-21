@@ -1,82 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CommandSystem.Commands.Shared;
-using PluginAPI;
+﻿using Newtonsoft.Json;
+using PlayerRoles;
+using PlayerStatsSystem;
 using PluginAPI.Core;
 using PluginAPI.Core.Attributes;
-using PluginAPI.Events;
 using PluginAPI.Enums;
-using CustomPlayerEffects;
-using PlayerRoles;
-using UnityEngine;
-using System.Diagnostics.Eventing.Reader;
-using InventorySystem;
-using PluginAPI.Core.Items;
-using Utils;
-using MEC;
-using PlayerRoles.FirstPersonControl.Spawnpoints;
-using PlayerRoles.FirstPersonControl;
-using MapGeneration;
-using System.ComponentModel;
-using PlayerStatsSystem;
-using System.Runtime.Remoting.Messaging;
-using InventorySystem.Items;
-using Newtonsoft.Json;
+using PluginAPI.Events;
+using System;
+using System.Collections.Generic;
 using System.Net.Http;
-using static UnityEngine.GraphicsBuffer;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace StatTrackerPlugin
 {
     public class Events
     {
         public static Dictionary<string, TrackedStats> StatTracking = new Dictionary<string, TrackedStats>();
-      
 
         [PluginEvent(ServerEventType.PlayerDamage)]
-
-        public void DamageCount(PlayerDamageEvent args) //damage dealt
+        public void DamageCount(PlayerDamageEvent args) //damage dealt and taken
         {
-
             var plr = args.Player;
             var target = args.Target;
-            if (target == null || plr == null || !(Round.IsRoundStarted)) return;
+            if (target == null || plr == null || !Round.IsRoundStarted) return;
 
             if (!(args.DamageHandler is AttackerDamageHandler attackerDamageHandler) ||
                 (attackerDamageHandler.IsFriendlyFire && plr.Role != RoleTypeId.ClassD)) return;
 
-            if (StatTracking.ContainsKey(plr.UserId))
-                StatTracking[plr.UserId].DamageDealt += (int)attackerDamageHandler.Damage;
+            if (!StatTracking.ContainsKey(plr.UserId))
+                StatTracking.Add(plr.UserId, new TrackedStats(plr));
 
-            else
-            {
-                var Stats = new TrackedStats(plr);
-                Stats.DamageDealt = (int)attackerDamageHandler.Damage;
-                StatTracking.Add(plr.UserId, Stats);
-            }
-        }
-        [PluginEvent(ServerEventType.PlayerDamage)]
-        public void DamageTakenCount(PlayerDamageEvent args) //damage taken
-        {
+            if (!StatTracking.ContainsKey(target.UserId))
+                StatTracking.Add(target.UserId, new TrackedStats(target));
 
-            var plr = args.Player;
-            var target = args.Target;
-            if (target == null || plr == null || !(Round.IsRoundStarted)) return;
-
-            if (!(args.DamageHandler is AttackerDamageHandler attackerDamageHandler) ||
-                (attackerDamageHandler.IsFriendlyFire && target.Role != RoleTypeId.ClassD)) return;
-
-            if (StatTracking.ContainsKey(target.UserId))
-                StatTracking[target.UserId].DamageTaken += (int)attackerDamageHandler.Damage;
-
-            else
-            {
-                var Stats = new TrackedStats(target);
-                Stats.DamageTaken = (int)attackerDamageHandler.Damage;
-                StatTracking.Add(target.UserId, Stats);
-            }
+            StatTracking[plr.UserId].DamageDealt += (int)attackerDamageHandler.Damage;
+            StatTracking[target.UserId].DamageTaken += (int)attackerDamageHandler.Damage;
         }
 
         [PluginEvent(ServerEventType.PlayerDeath)]
@@ -84,137 +42,69 @@ namespace StatTrackerPlugin
         {
             var plr = args.Player;
 
-            if (plr == null || !(Round.IsRoundStarted)) return;
+            if (plr == null || !Round.IsRoundStarted) return;
 
             if (plr.Role == RoleTypeId.Tutorial) return;
 
             if (StatTracking.ContainsKey(plr.UserId))
                 StatTracking[plr.UserId].Deaths += 1;
-
             else
-            {
-                var Stats = new TrackedStats(plr);
-                Stats.Deaths = 1;
-                StatTracking.Add(plr.UserId, Stats);
-            }
+                StatTracking.Add(plr.UserId, new TrackedStats(plr) { Deaths = 1 });
         }
 
 
-       
+        [PluginEvent(ServerEventType.PlayerDeath)] //Player death instead of dying for FF blocked events
+        public void HumansKilledCount(PlayerDeathEvent args)
+        {
+            var plr = args.Player;
+            var atckr = args.Attacker;
+            if (plr == null || atckr == null || !(args.DamageHandler is AttackerDamageHandler aDH) || !Round.IsRoundStarted) return;
+
+            if (!StatTracking.ContainsKey(plr.UserId))
+                StatTracking.Add(plr.UserId, new TrackedStats(plr));
+
+            if (!StatTracking.ContainsKey(atckr.UserId))
+                StatTracking.Add(atckr.UserId, new TrackedStats(atckr));
+
+            if (plr.IsSCP) // SCPs killed
+                StatTracking[atckr.UserId].SCPsKilled += 1;
+
+            if (atckr.IsSCP) // kills as SCP
+                StatTracking[atckr.UserId].SCPKills += 1;
+
+            if (plr.IsHuman) //humans killed
+                StatTracking[atckr.UserId].HumansKilled += 1;
+
+            //Uses the damage handler for edge cases when attacker is dead when kill happens, but caused it as a human (scp 018 for example)
+            if (aDH.Attacker.Role.IsHuman()) //kills as human
+                StatTracking[atckr.UserId].HumanKills += 1;
+        }
+
         [PluginEvent(ServerEventType.PlayerEscape)]
         public void Escapes(PlayerEscapeEvent args)
         {
             var plr = args.Player;
 
-            if (plr == null || !(Round.IsRoundStarted)) return;
+            if (plr == null || !Round.IsRoundStarted) return;
 
             if (StatTracking.ContainsKey(plr.UserId))
                 StatTracking[plr.UserId].Escaped = true;
-
             else
-            {
-                var Stats = new TrackedStats(plr);
-                Stats.Escaped = true;
-                StatTracking.Add(plr.UserId, Stats);
-            }
+                StatTracking.Add(plr.UserId, new TrackedStats(plr) { Escaped = true });
         }
 
-        
-        [PluginEvent(ServerEventType.PlayerDeath)]
-        public void asSCPKillCount(PlayerDeathEvent args) // kills as SCP
-        {
-            var plr = args.Player;
-            var Killer = args.Attacker;
-
-            if (plr == null || Killer == null || !Round.IsRoundStarted) return;
-            if (!Killer.IsSCP) return;
-            if (StatTracking.ContainsKey(Killer.UserId))
-                StatTracking[Killer.UserId].SCPKills += 1;
-
-            else
-            {
-                var Stats = new TrackedStats(Killer);
-                Stats.SCPKills = 1;
-                StatTracking.Add(Killer.UserId, Stats);
-            }
-        }
-
-        [PluginEvent(ServerEventType.PlayerDying)]
-        public void SCPsKilledCount(PlayerDyingEvent args)// SCPs killed
-        {
-            var plr = args.Player;
-            var Killer = args.Attacker;
-            if (plr == null || Killer == null || !Round.IsRoundStarted) return;
-            if (!plr.IsSCP) return; //WHY THE FUCK DO YOU WORK
-            if (StatTracking.ContainsKey(Killer.UserId))
-            {
-                StatTracking[Killer.UserId].SCPsKilled += 1;
-                
-            }
-            else
-            {
-                var Stats = new TrackedStats(Killer);
-                Stats.SCPsKilled = 1;
-                StatTracking.Add(Killer.UserId, Stats);
-                
-            }
-            
-        }
-
-        [PluginEvent(ServerEventType.PlayerDying)]
-        public void HumansKilledCount(PlayerDyingEvent args)//humans killed
-        {
-            var plr = args.Player;
-            var Killer = args.Attacker;
-            if (plr == null || Killer == null || !Round.IsRoundStarted) return;
-            if (!plr.IsHuman) return;
-            if (StatTracking.ContainsKey(Killer.UserId))
-                StatTracking[Killer.UserId].HumansKilled += 1;
-
-            else
-            {
-                var Stats = new TrackedStats(plr);
-                Stats.HumansKilled = 1;
-                StatTracking.Add(Killer.UserId, Stats);
-            }
-        }
-
-    
-        [PluginEvent(ServerEventType.PlayerDeath)]
-        public void HumanKillCount(PlayerDeathEvent args)//kills as human
-        {
-            var plr = args.Player;
-            var Killer = args.Attacker;
-            if (plr == null || Killer == null || !Round.IsRoundStarted) return;
-            if (!Killer.IsHuman) return;
-            if (StatTracking.ContainsKey(Killer.UserId))
-                StatTracking[Killer.UserId].HumanKills += 1;
-
-            else
-            {
-                var Stats = new TrackedStats(Killer);
-                Stats.HumanKills = 1;
-                StatTracking.Add(Killer.UserId, Stats);
-            }
-        }
-
-       
         [PluginEvent(ServerEventType.PlayerHandcuff)]
         public void PlayerDisarm(PlayerHandcuffEvent args)
         {
             var plr = args.Player;
             var Target = args.Target;
 
-            if (plr == null || !(Round.IsRoundStarted)) return;
+            if (plr == null || !Round.IsRoundStarted) return;
+
             if (StatTracking.ContainsKey(plr.UserId))
                 StatTracking[plr.UserId].PlayersDisarmed += 1;
-
             else
-            {
-                var Stats = new TrackedStats(plr);
-                Stats.PlayersDisarmed = 1;
-                StatTracking.Add(plr.UserId, Stats);
-            }
+                StatTracking.Add(plr.UserId, new TrackedStats(plr) { PlayersDisarmed = 1 });
         }
 
         [PluginEvent(ServerEventType.PlayerUsedItem)]
@@ -222,87 +112,59 @@ namespace StatTrackerPlugin
         {
             var plr = args.Player;
 
-            if (plr == null || !(Round.IsRoundStarted)) return;
-            if (plr.CurrentItem.ItemTypeId == ItemType.Medkit)
-            {
+            if (plr == null || !Round.IsRoundStarted) return;
+
+            if (plr.CurrentItem.Category == ItemCategory.Medical) //Changed to detect any medical item, instead of just medkits
                 if (StatTracking.ContainsKey(plr.UserId))
                     StatTracking[plr.UserId].MedicalItems += 1;
-
                 else
-                {
-                    var Stats = new TrackedStats(plr);
-                    Stats.MedicalItems = 1;
-                    StatTracking.Add(plr.UserId, Stats);
-                }
-            }
-        } 
+                    StatTracking.Add(plr.UserId, new TrackedStats(plr) { MedicalItems = 1 });
+        }
 
         [PluginEvent(ServerEventType.PlayerJoined)]
         public void Playtime(PlayerJoinedEvent args)
         {
             var plr = args.Player;
 
-            if (Round.IsRoundStarted)
-            {
-                if (StatTracking.ContainsKey(plr.UserId))
-                    StatTracking[plr.UserId].Jointime = DateTime.Now;
+            if (plr == null || !Round.IsRoundStarted) return;
 
-                else
-                {
-                    var Stats = new TrackedStats(plr);
-                    StatTracking.Add(plr.UserId, Stats);
-                }
-            }
-            
-                     
-
-
+            if (StatTracking.ContainsKey(plr.UserId))
+                StatTracking[plr.UserId].Jointime = DateTime.Now;
+            else
+                StatTracking.Add(plr.UserId, new TrackedStats(plr));
 
         }
+
         [PluginEvent(ServerEventType.PlayerSpawn)]
         public void SCPRounds(PlayerSpawnEvent args)
         {
             var plr = args.Player;
-            if(plr.IsSCP)
-            {
+
+            if (plr == null || !Round.IsRoundStarted) return;
+
+            if (plr.IsSCP) //I think this will have quite a few issues with people being able to swap to human, and zombies maybe also triggering this event.
                 if (StatTracking.ContainsKey(plr.UserId))
                     StatTracking[plr.UserId].SCP = (int)plr.Role;
-
                 else
-                {
-                    var Stats = new TrackedStats(plr);
-                    Stats.SCP = (int)plr.Role;
-                    StatTracking.Add(plr.UserId, Stats);
-                }
-            }
+                    StatTracking.Add(plr.UserId, new TrackedStats(plr) { SCP = (int)plr.Role });
         }
 
         [PluginEvent(ServerEventType.RoundStart)]
         public void PlaytimeAfterStart(RoundStartEvent args)
         {
             foreach (Player plr in Player.GetPlayers())
-            {
                 if (StatTracking.ContainsKey(plr.UserId))
                     StatTracking[plr.UserId].Jointime = DateTime.Now;
-
                 else
-                {
-                    var Stats = new TrackedStats(plr);
-                    StatTracking.Add(plr.UserId, Stats);
-                }
-            }
-
-
+                    StatTracking.Add(plr.UserId, new TrackedStats(plr));
         }
+
         [PluginEvent(ServerEventType.PlayerLeft)]
         public void PlaytimeLeave(PlayerLeftEvent args)
         {
             var plr = args.Player;
             if (StatTracking.ContainsKey(plr.UserId))
-            {
-                int secondsplayed = (int)(DateTime.Now - StatTracking[plr.UserId].Jointime).TotalSeconds;
-                StatTracking[plr.UserId].SecondsPlayed += secondsplayed;
-            }
+                StatTracking[plr.UserId].SecondsPlayed += (int)(DateTime.Now - StatTracking[plr.UserId].Jointime).TotalSeconds;
         }
 
         [PluginEvent(ServerEventType.RoundEnd)]
@@ -315,30 +177,33 @@ namespace StatTrackerPlugin
                     int secondsplayed = (int)(DateTime.Now - StatTracking[plr.UserId].Jointime).TotalSeconds;
                     StatTracking[plr.UserId].SecondsPlayed += secondsplayed;
 
-
-                    if (plr.Team == Team.SCPs && args.LeadingTeam == RoundSummary.LeadingTeam.Anomalies)
-                        StatTracking[plr.UserId].RoundWon = true;
-
-                    if (plr.Team == Team.FoundationForces && args.LeadingTeam == RoundSummary.LeadingTeam.FacilityForces)
-                        StatTracking[plr.UserId].RoundWon = true;
-
-                    if (plr.Team == Team.ChaosInsurgency && args.LeadingTeam == RoundSummary.LeadingTeam.ChaosInsurgency)
-                        StatTracking[plr.UserId].RoundWon = true;
+                    switch (args.LeadingTeam)
+                    {
+                        case RoundSummary.LeadingTeam.Anomalies:
+                            StatTracking[plr.UserId].RoundWon = plr.Team == Team.SCPs;
+                            break;
+                        case RoundSummary.LeadingTeam.FacilityForces:
+                            StatTracking[plr.UserId].RoundWon = plr.Team == Team.FoundationForces;
+                            break;
+                        case RoundSummary.LeadingTeam.ChaosInsurgency:
+                            StatTracking[plr.UserId].RoundWon = plr.Team == Team.ChaosInsurgency;
+                            break;
+                    }
                 }
             }
-			List<TrackedStats> stats = new List<TrackedStats>();
+            List<TrackedStats> stats = new List<TrackedStats>();
 
-			foreach(var a in StatTracking)
-			{
-				Log.Info($"Adding {a.Key} | {a.Value.UserID} | {a.Value.DNT}");
+            foreach (var stat in StatTracking)
+            {
+                Log.Info($"Adding {stat.Key} | {stat.Value.UserID} | {stat.Value.DNT}");
 
-				if (!a.Value.DNT)
-				{
-					stats.Add(a.Value);
-				}
-			}
+                if (!stat.Value.DNT)
+                {
+                    stats.Add(stat.Value);
+                }
+            }
 
-			Log.Info($"{stats.Count} stats tracked");
+            Log.Info($"{stats.Count} stats tracked");
 
             var jsonstring = JsonConvert.SerializeObject(stats.ToArray(), Formatting.Indented);
             Post("https://testapi.dragonscp.co.uk/scpsl/stattracker", new StringContent(jsonstring, Encoding.UTF8, "application/json"));
@@ -357,31 +222,5 @@ namespace StatTrackerPlugin
         {
             StatTracking.Clear();
         }
-        public class TrackedStats
-        {
-            public TrackedStats(Player plr)
-            {
-                UserID = plr.UserId;
-                DNT = plr.DoNotTrack;
-                Jointime = DateTime.Now;
-            }
-
-            public string UserID;
-            public bool DNT = true;
-            public int SCPsKilled = 0;
-            public int SCPKills = 0;
-            public int HumansKilled = 0;
-            public int HumanKills = 0;
-            public int MedicalItems = 0;
-            public bool Escaped = false;
-            public bool RoundWon = false;
-            public int SecondsPlayed = 0;
-            public int PlayersDisarmed = 0;
-            public int DamageDealt = 0;
-            public int DamageTaken = 0;
-            public int Deaths = 0;
-            public int SCP = 0;
-            public DateTime Jointime;
-        }
-      } 
-}    
+    }
+}
