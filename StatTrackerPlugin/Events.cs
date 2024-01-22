@@ -69,9 +69,7 @@ namespace StatTrackerPlugin
 
             else
             {
-                var Stats = new TrackedStats(plr);
-                Stats.Deaths = 1;
-                StatTracking.Add(plr.UserId, Stats);
+                StatTracking.Add(plr.UserId, new TrackedStats(plr) { Deaths = 1 });
             }
         }
 
@@ -92,27 +90,7 @@ namespace StatTrackerPlugin
                 StatTracking.Add(plr.UserId, new TrackedStats(plr) { Escaped = true });
             }
         }
-
         
-        [PluginEvent(ServerEventType.PlayerDeath)]
-        public void asSCPKillCount(PlayerDeathEvent args) // kills as SCP
-        {
-            var plr = args.Player;
-            var Killer = args.Attacker;
-
-            if (plr == null || Killer == null || !Round.IsRoundStarted) return;
-            if (!Killer.IsSCP) return;
-            if (StatTracking.ContainsKey(Killer.UserId))
-                StatTracking[Killer.UserId].SCPKills += 1;
-
-            else
-            {
-                var Stats = new TrackedStats(Killer);
-                Stats.SCPKills = 1;
-                StatTracking.Add(Killer.UserId, Stats);
-            }
-        }
-
         [PluginEvent(ServerEventType.PlayerDying)]
         public void KilledCount(PlayerDyingEvent args)// SCPs/Humans killed
         {
