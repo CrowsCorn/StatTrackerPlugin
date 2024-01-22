@@ -186,7 +186,8 @@ namespace StatTrackerPlugin
         public void SCPRounds(PlayerSpawnEvent args)
         {
             var plr = args.Player;
-            if(plr.IsSCP)
+            if(plr.Role != RoleTypeId.Scp0492)//stops zombies and accounts for the SCPswap command
+            if(plr.IsSCP && Round.Duration > TimeSpan.FromMinutes(1) && Round.Duration < TimeSpan.FromMinutes(1.5f))
             {
                 if (StatTracking.ContainsKey(plr.UserId))
                     StatTracking[plr.UserId].SCP = (int)plr.Role;
