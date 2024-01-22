@@ -23,7 +23,7 @@ using MapGeneration;
 
 namespace StatTrackerPlugin
 {
-    public class Plugin
+    public class Class1
     {
         [PluginEntryPoint("Stat Tracker Plugin", "1.0.0", "Tracks the stats of players on Dragon inn", "Crowscorn")]
 
@@ -32,32 +32,5 @@ namespace StatTrackerPlugin
             Log.Info("Spinning the egg");
             EventManager.RegisterEvents<Events>(this);
         }
-    }
-
-    public class TrackedStats
-    {
-        public TrackedStats(Player plr)
-        {
-            UserID = plr.UserId;
-            DNT = plr.DoNotTrack;
-            Jointime = DateTime.Now;
-        }
-
-        public string UserID;
-        public bool DNT = true;
-        public int SCPsKilled = 0;
-        public int SCPKills = 0;
-        public int HumansKilled = 0;
-        public int HumanKills = 0;
-        public int MedicalItems = 0;
-        public bool Escaped = false;
-        public bool RoundWon = false;
-        public int SecondsPlayed = 0;
-        public int PlayersDisarmed = 0;
-        public int DamageDealt = 0;
-        public int DamageTaken = 0;
-        public int Deaths = 0;
-        public int SCP = (int)RoleTypeId.None; //SCP 173 is 0 in the enum
-        public DateTime Jointime;
     }
 }
